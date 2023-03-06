@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33103.184
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseChamp", "DatabaseChamp\DatabaseChamp.csproj", "{B498992D-AACC-4EFC-A25B-BA02290D948F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseChamp.Test", "DatabaseChamp.Test\DatabaseChamp.Test.csproj", "{A7461A2A-88B8-4BCA-A765-75B605E5FEB4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B498992D-AACC-4EFC-A25B-BA02290D948F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B498992D-AACC-4EFC-A25B-BA02290D948F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B498992D-AACC-4EFC-A25B-BA02290D948F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B498992D-AACC-4EFC-A25B-BA02290D948F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7461A2A-88B8-4BCA-A765-75B605E5FEB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7461A2A-88B8-4BCA-A765-75B605E5FEB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7461A2A-88B8-4BCA-A765-75B605E5FEB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7461A2A-88B8-4BCA-A765-75B605E5FEB4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5B4D6840-F0A2-42A5-8AA1-3394370AA129}
+	EndGlobalSection
+EndGlobal
