@@ -52,22 +52,41 @@ namespace DatabaseChamp
             // TODO: Persists table information
         }
 
-        public void Add<T>(object objectToAdd)
+        public void Add<T>(T objectToAdd)
         {
+            ArgumentNullException.ThrowIfNull(objectToAdd, nameof(objectToAdd));
+
             var tableName = FindTableForDatatype<T>();
 
-            if (objectToAdd.GetType() == typeof(T))
+            var path = Path.Combine(_databaseFolder, $"{tableName}.json");
+            var existingFileStringContent = File.ReadAllText(path);
+            var existingFileContent = JsonSerializer.Deserialize<List<T>>(existingFileStringContent, _jsonSerializerOptions)!;
+            if (existingFileContent.Any(i => IsEqual(i, objectToAdd)))
             {
-                var path = Path.Combine(_databaseFolder, $"{tableName}.json");
-                var existingFileStringContent = File.ReadAllText(path);
-                var existingFileContent = JsonSerializer.Deserialize<List<T>>(existingFileStringContent, _jsonSerializerOptions)!;
-                existingFileContent.Add((T)objectToAdd);
-                File.WriteAllText(path, JsonSerializer.Serialize(existingFileContent, _jsonSerializerOptions));
+                throw new DublicateException();
             }
-            else
+
+            existingFileContent.Add(objectToAdd);
+            File.WriteAllText(path, JsonSerializer.Serialize(existingFileContent, _jsonSerializerOptions));
+        }
+
+        public void Remove<T>(T objectToRemove)
+        {
+            ArgumentNullException.ThrowIfNull(objectToRemove, nameof(objectToRemove));
+
+            var tableName = FindTableForDatatype<T>();
+
+            var path = Path.Combine(_databaseFolder, $"{tableName}.json");
+            var existingFileStringContent = File.ReadAllText(path);
+            var existingFileContent = JsonSerializer.Deserialize<List<T>>(existingFileStringContent, _jsonSerializerOptions)!;
+            var item = existingFileContent.SingleOrDefault(i => IsEqual(i, objectToRemove));
+            if (item is null)
             {
-                throw new WrongDatatypeException(typeof(T).ToString(), objectToAdd.GetType().ToString());
+                throw new ItemNotFoundException(tableName);
             }
+
+            existingFileContent.Remove(item);
+            File.WriteAllText(path, JsonSerializer.Serialize(existingFileContent, _jsonSerializerOptions));
         }
 
         public IEnumerable<T> GetAll<T>()
@@ -77,6 +96,40 @@ namespace DatabaseChamp
             var path = Path.Combine(_databaseFolder, $"{tableName}.json");
             var existingFileStringContent = File.ReadAllText(path);
             return JsonSerializer.Deserialize<IEnumerable<T>>(existingFileStringContent, _jsonSerializerOptions)!;
+        }
+
+        // TODO: I think this will not work with nested objects
+        private static bool IsEqual<T>(T objectOne, T objectTwo)
+        {
+            if (objectOne == null || objectTwo == null)
+            {
+                return false;
+            }
+
+            var type = typeof(T);
+            foreach (System.Reflection.PropertyInfo property in type.GetProperties())
+            {
+                if (property.Name != "ExtensionData")
+                {
+                    var objectOneValue = string.Empty;
+                    var objectTwoValue = string.Empty;
+                    if (type.GetProperty(property.Name)?.GetValue(objectOne, null) != null)
+                    {
+                        objectOneValue = type.GetProperty(property.Name)?.GetValue(objectOne, null)?.ToString() ?? string.Empty;
+                    }
+
+                    if (type.GetProperty(property.Name)?.GetValue(objectTwo, null) != null)
+                    {
+                        objectTwoValue = type.GetProperty(property.Name)?.GetValue(objectTwo, null)?.ToString() ?? string.Empty;
+                    }
+
+                    if (objectOneValue.Trim() != objectTwoValue.Trim())
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         private string FindTableForDatatype<T>()
@@ -92,4 +145,6 @@ namespace DatabaseChamp
 
     // TODO: Implement Remove-Method
     // TODO: Implement Update-Method
+    // TODO: Implement AddRange
+    // TODO: Implement RemoveRange
 }

@@ -10,6 +10,8 @@ namespace DatabaseChamp.Test
         private static readonly string _defaultTableName = "testfile";
         private static readonly string _defaultFolderPath = Path.Combine(Environment.CurrentDirectory, "databaseFiles");
 
+        #region base
+
         [TestCase()]
         [TestCase("C:\\Users\\robin\\databaseFiles")]
         [Test]
@@ -36,7 +38,7 @@ namespace DatabaseChamp.Test
         {
             var context = new DatabaseContext();
             context.CreateTable<TestModel>(_defaultTableName);
-            context.Add<TestModel>(new TestModel { TestPropOne = "TestItemOne" });
+            context.Add(new TestModel { TestPropOne = "TestItemOne" });
 
             context.CreateTable<TestModel>(_defaultTableName);
 
@@ -46,12 +48,15 @@ namespace DatabaseChamp.Test
             Assert.AreEqual("TestItemOne", savedItems.First().TestPropOne, "Property value has changed");
         }
 
+        #endregion
+        #region add
+
         [Test]
         public void AddMethod_ShouldContainItem_AfterItWasAdded()
         {
             var context = new DatabaseContext();
             context.CreateTable<TestModel>(_defaultTableName);
-            context.Add<TestModel>(new TestModel { TestPropOne = "TestItemOne" });
+            context.Add(new TestModel { TestPropOne = "TestItemOne" });
             var savedItems = context.GetAll<TestModel>();
 
             Assert.AreEqual(1, savedItems.Count(), "Number of items does not match");
@@ -63,38 +68,121 @@ namespace DatabaseChamp.Test
         {
             var context = new DatabaseContext();
             context.CreateTable<TestModel>(_defaultTableName);
-            context.Add<TestModel>(new TestModel { TestPropOne = "TestItemOne" });
-            context.Add<TestModel>(new TestModel { TestPropOne = "TestItemTwo" });
+            context.Add(new TestModel { TestPropOne = "TestItemOne" });
+            context.Add(new TestModel { TestPropOne = "TestItemTwo" });
             var savedItems = context.GetAll<TestModel>();
 
             Assert.AreEqual(2, savedItems.Count(), "Number of items does not match");
         }
 
-            [Test]
+        [Test]
         public void AddMethod_ShouldThrow_IfTableWasNotCreated()
         {
             var context = new DatabaseContext();
             var ex = Assert.Throws<TableNotFoundException>(delegate
             {
-                context.Add<TestModel>(new TestModel());
+                context.Add(new TestModel());
             });
 
             Assert.That(ex!.Message, Contains.Substring(typeof(TestModel).ToString()));
         }
 
         [Test]
-        public void AddMethod_ShouldThrow_IfDatatypesDoesNotMatch()
+        public void AddMethod_ShouldThrow_IfItemIsAlreadyInCollection()
         {
             var context = new DatabaseContext();
             context.CreateTable<TestModel>(_defaultTableName);
-            var ex = Assert.Throws<WrongDatatypeException>(delegate
+            var entity = new TestModel { TestPropOne = "TestItemOne" };
+            context.Add(entity);
+
+            Assert.Throws<DublicateException>(delegate
             {
-                context.Add<TestModel>(new TestModelTwo());
+                context.Add(entity);
+            });
+        }
+
+        [Test]
+        public void AddMethod_ShouldThrow_IfItemIsNull()
+        {
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+
+            var ex = Assert.Throws<ArgumentNullException>(delegate
+            {
+                context.Add<TestModel>(null!);
             });
 
-            Assert.That(ex!.Message, Contains.Substring("TestModel"));
-            Assert.That(ex!.Message, Contains.Substring("TestModelTwo"));
+            Assert.That(ex!.ParamName, Is.EqualTo("objectToAdd"));
         }
+
+        #endregion
+        #region remove
+
+        [Test]
+        public void RemoveMethod_ItemShouldBeGone_AfterRemoval()
+        {
+            var entity = new TestModel { TestPropOne = "TestItemOne" };
+
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+            context.Add(entity);
+            context.Remove(entity);
+            var savedItems = context.GetAll<TestModel>();
+
+            Assert.AreEqual(0, savedItems.Count(), "Number of items does not match");
+        }
+
+        [Test]
+        public void RemoveMethod_OtherItemsShouldStillExists_AfterRemoval()
+        {
+            var entityOne = new TestModel { TestPropOne = "TestItemOne" };
+            var entityTwo = new TestModel { TestPropOne = "TestItemTwo" };
+
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+            context.Add(entityOne);
+            context.Add(entityTwo);
+            context.Remove(entityOne);
+            var savedItems = context.GetAll<TestModel>();
+
+            Assert.AreEqual(1, savedItems.Count(), "Number of items does not match");
+            Assert.AreEqual("TestItemTwo", savedItems.First().TestPropOne, "Wrong item was removed");
+        }
+
+        [Test]
+        public void RemoveMethod_ShouldThrow_IfItemNotExistsInCollection()
+        {
+            var entityOne = new TestModel { TestPropOne = "TestItemOne" };
+            var entityTwo = new TestModel { TestPropOne = "TestItemTwo" };
+
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+            context.Add(entityOne);
+
+            Assert.Throws<ItemNotFoundException>(delegate
+            {
+                context.Remove(entityTwo);
+            });
+        }
+
+        [Test]
+        public void RemoveMethod_ShouldThrow_IfItemIsNull()
+        {
+            var entityOne = new TestModel { TestPropOne = "TestItemOne" };
+
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+            context.Add(entityOne);
+
+            var ex = Assert.Throws<ArgumentNullException>(delegate
+            {
+                context.Remove<TestModel>(null!);
+            });
+
+            Assert.That(ex!.ParamName, Is.EqualTo("objectToRemove"));
+        }
+
+        #endregion 
 
         [TearDown]
         public void TearDown()

@@ -1,15 +1,22 @@
 ﻿namespace DatabaseChamp.Exceptions
 {
-    public class TableNotFoundException : Exception
+    public class DublicateException : Exception
     {
-        public TableNotFoundException(string datatype) : base($"No table found for datatype \"{datatype}\"")
+        public DublicateException() : base($"Item already exists in collection")
         {
         }
     }
 
-    public class WrongDatatypeException : Exception
+    public class ItemNotFoundException : Exception
     {
-        public WrongDatatypeException(string expectedType, string actualType) : base($"Expected Type \"{expectedType}\" but found \"{actualType}\"")
+        public ItemNotFoundException(string datatype) : base($"No matching item found in the collection for datatype \"{datatype}\"")
+        {
+        }
+    }
+
+    public class TableNotFoundException : Exception
+    {
+        public TableNotFoundException(string datatype) : base($"No table found for datatype \"{datatype}\"")
         {
         }
     }
