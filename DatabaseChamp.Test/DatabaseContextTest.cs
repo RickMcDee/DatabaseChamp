@@ -24,6 +24,27 @@ namespace DatabaseChamp.Test
         }
 
         [Test]
+        public void PersistenceTest()
+        {
+            // Create a database + files
+            var context = new DatabaseContext();
+            context.CreateTable<TestModel>(_defaultTableName);
+            context.Add(new TestModel { TestPropOne = "TestItemOne" });
+
+            // Destroy context and trigger garbage collection
+            context = null;
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            // Create a new context which should import the existing collections
+            var newContext = new DatabaseContext();
+            var savedItems = newContext.GetAll<TestModel>();
+
+            Assert.AreEqual(1, savedItems.Count(), "Number of items does not match");
+            Assert.AreEqual("TestItemOne", savedItems.First().TestPropOne, "Property value has changed");
+        }
+
+        [Test]
         public void DatabaseFile_Exists_AfterCreation()
         {
             var context = new DatabaseContext();

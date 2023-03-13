@@ -1,4 +1,5 @@
 ﻿using DatabaseChamp.Exceptions;
+using DatabaseChamp.Models;
 using System.Text.Json;
 
 namespace DatabaseChamp
@@ -7,11 +8,12 @@ namespace DatabaseChamp
     {
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
         {
+            Converters = { new CustomJsonConverterForType() },
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
             PropertyNameCaseInsensitive = true,
         };
 
-        private readonly string _databaseFolder = Path.Combine(Environment.CurrentDirectory, "databaseFiles");
+        private readonly string _databaseFolder = Path.Combine(Environment.CurrentDirectory, Constants.DEFAULT_DATABASEFOLDER_NAME);
         private readonly Dictionary<Type, string> _databaseTables = new();
 
         public DatabaseContext(string databaseFolder = "")
@@ -21,16 +23,33 @@ namespace DatabaseChamp
                 _databaseFolder = databaseFolder;
             }
 
+            // Create the folder for database files
             Directory.CreateDirectory(_databaseFolder);
 
-            // TODO: Scan for existing tables
+            // Create a master table to persist information about datatypes
+            CreateMasterTable();
+
+            // Load information about existing datatypes
+            var existingCollectionInformation = GetAll<CollectionInformation>();
+            foreach (var existing in existingCollectionInformation)
+            {
+                if (existing.CollectionName == Constants.DEFAULT_MASTERTABLE_NAME)
+                {
+                    continue;
+                }
+
+                _databaseTables.Add(existing.CollectionType, existing.CollectionName);
+            }
         }
 
         public void CreateTable<T>(string tableName, bool overwriteExisting = false)
         {
+            ArgumentNullException.ThrowIfNull(tableName, nameof(tableName));
+
             var path = Path.Combine(_databaseFolder, $"{tableName}.json");
             if (File.Exists(path) && !overwriteExisting)
             {
+                Add(new CollectionInformation { CollectionType = typeof(T), CollectionName = tableName }, throwIfAlreadyExists: false);
                 return;
             }
 
@@ -42,6 +61,7 @@ namespace DatabaseChamp
                 fs.Dispose();
 
                 File.WriteAllText(path, "[]");
+                Add(new CollectionInformation { CollectionType = typeof(T), CollectionName = tableName });
             }
             catch (Exception)
             {
@@ -49,10 +69,9 @@ namespace DatabaseChamp
                 throw;
             }
 
-            // TODO: Persists table information
         }
 
-        public void Add<T>(T objectToAdd)
+        public void Add<T>(T objectToAdd, bool throwIfAlreadyExists = true)
         {
             ArgumentNullException.ThrowIfNull(objectToAdd, nameof(objectToAdd));
 
@@ -63,7 +82,14 @@ namespace DatabaseChamp
             var existingFileContent = JsonSerializer.Deserialize<List<T>>(existingFileStringContent, _jsonSerializerOptions)!;
             if (existingFileContent.Any(i => IsEqual(i, objectToAdd)))
             {
-                throw new DublicateException();
+                if (throwIfAlreadyExists)
+                {
+                    throw new DublicateException();
+                }
+                else
+                {
+                    return;
+                }
             }
 
             existingFileContent.Add(objectToAdd);
@@ -96,6 +122,25 @@ namespace DatabaseChamp
             var path = Path.Combine(_databaseFolder, $"{tableName}.json");
             var existingFileStringContent = File.ReadAllText(path);
             return JsonSerializer.Deserialize<IEnumerable<T>>(existingFileStringContent, _jsonSerializerOptions)!;
+        }
+
+        private void CreateMasterTable()
+        {
+            var path = Path.Combine(_databaseFolder, $"{Constants.DEFAULT_MASTERTABLE_NAME}.json");
+            if (!File.Exists(path))
+            {
+                using var fs = File.Create(path);
+                fs.Close();
+                fs.Dispose();
+
+                File.WriteAllText(path, "[]");
+                _databaseTables.Add(typeof(CollectionInformation), Constants.DEFAULT_MASTERTABLE_NAME);
+                Add(new CollectionInformation { CollectionType = typeof(CollectionInformation), CollectionName = Constants.DEFAULT_MASTERTABLE_NAME });
+            }
+            else
+            {
+                _databaseTables.Add(typeof(CollectionInformation), Constants.DEFAULT_MASTERTABLE_NAME);
+            }
         }
 
         // TODO: I think this will not work with nested objects
